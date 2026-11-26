@@ -42,7 +42,6 @@ class MultiModalDataset(Dataset):
         """
         Args:
             modalities: list of numpy arrays, each shape [N, D_i]
-            normalize: 是否对每个模态按特征标准化 (z-score)
         """
         assert all(isinstance(m, np.ndarray) for m in modalities), "Each modality must be numpy array"
         n_samples = modalities[0].shape[0]
@@ -54,64 +53,8 @@ class MultiModalDataset(Dataset):
         return self.modalities[0].shape[0]
 
     def __getitem__(self, idx):
-        # 返回 list[Tensor], 每个模态一个
         sample = [torch.tensor(m[idx], dtype=torch.float32) for m in self.modalities]
         return sample
-
-class Quantize(nn.Module):
-    #https://github.com/rosinality/vq-vae-2-pytorch/tree/master
-    def __init__(self, n_embed, dim,  decay=0.9, eps=1e-5, commitment_cost=0.25):
-        super().__init__()
-        torch.manual_seed(42)
-        self.dim = dim
-        self.n_embed = n_embed
-        self.decay = decay
-        self.eps = eps
-        self.commitment = commitment_cost
-
-        embed = torch.randn(dim, n_embed)
-        self.register_buffer("embed", embed)
-        self.register_buffer("cluster_size", torch.zeros(n_embed))
-        self.register_buffer("embed_avg", embed.clone())
-
-    def forward(self, inputs):
-        flatten = inputs.reshape(-1, self.dim)
-        dist = (
-            flatten.pow(2).sum(1, keepdim=True)
-            - 2 * flatten @ self.embed
-            + self.embed.pow(2).sum(0, keepdim=True)
-        )
-        _, embed_ind = (-dist).max(1)
-        embed_onehot = F.one_hot(embed_ind, self.n_embed).type(flatten.dtype)
-        embed_ind = embed_ind.view(*inputs.shape[:-1])
-        quantize = self.embed_code(embed_ind)
-
-        if self.training:
-            embed_onehot_sum = embed_onehot.sum(0)
-            embed_sum = flatten.transpose(0, 1) @ embed_onehot
-
-            dist_fn.all_reduce(embed_onehot_sum)
-            dist_fn.all_reduce(embed_sum)
-
-            self.cluster_size.data.mul_(self.decay).add_(
-                embed_onehot_sum, alpha=1 - self.decay
-            )
-            self.embed_avg.data.mul_(self.decay).add_(embed_sum, alpha=1 - self.decay)
-            n = self.cluster_size.sum()
-            cluster_size = (
-                (self.cluster_size + self.eps) / (n + self.n_embed * self.eps) * n
-            )
-            embed_normalized = self.embed_avg / cluster_size.unsqueeze(0)
-            self.embed.data.copy_(embed_normalized)
-
-        diff = (quantize.detach() - inputs).pow(2).mean()
-        quantize = inputs + (quantize - inputs).detach()
-        loss =  self.commitment  * diff
-
-        return quantize, loss, embed_ind
-
-    def embed_code(self, embed_id):
-        return F.embedding(embed_id, self.embed.transpose(0, 1))
 
 class VectorQuantizerEMA(nn.Module):
     #https://colab.research.google.com/github/zalandoresearch/pytorch-vq-vae/blob/master/vq-vae.ipynb#scrollTo=eXOBnh5pW-38
@@ -136,7 +79,6 @@ class VectorQuantizerEMA(nn.Module):
     def forward(self, inputs):
        
         input_shape = inputs.shape
-        
         # Flatten input
         flat_input = inputs.view(-1, self._embedding_dim)
         
@@ -529,9 +471,6 @@ def paired_t_scatter(x, y,
    
     x = np.asarray(x)
     y = np.asarray(y)
-    if x.shape != y.shape:
-        raise ValueError("x 和 y 必须长度相同（成对样本）。")
-
     n = len(x)
 
   
@@ -819,7 +758,6 @@ def plot_3D_bar(TPR,FPR,SR,save_path):
 
     # bar size
     dx = dy = 0.05
-
     # plot 3 bars
     for i in range(3):
         ax.bar3d(
@@ -844,37 +782,6 @@ def plot_3D_bar(TPR,FPR,SR,save_path):
     ax.view_init(elev=20, azim=-60)   
     ax.dist = 0                     
     plt.savefig(save_path, dpi=300, bbox_inches = 'tight')
-
-'''
-def cal_spatial_neuromap(private,shared,original,neuro_par):
-    pr_corr_cortical = []
-    pr_corr_sub = []
-    for pr in private:
-        sub_pr = pr.cpu().numpy()
-        spatial_r = [pearsonr(sub_pr[i,:32],neuro_par.squeeze()[0:32])[0] for i in range(sub_pr.shape[0])]
-        pr_corr_sub.append(spatial_r)
-        spatial_r = [pearsonr(sub_pr[i,32:],neuro_par.squeeze()[32:])[0] for i in range(sub_pr.shape[0])]
-        pr_corr_cortical.append(spatial_r)
-
-    sh_corr_cortical = []
-    sh_corr_sub = []
-    for pr in shared:
-        sub_pr = pr.cpu().numpy()
-        spatial_r = [pearsonr(sub_pr[i,:32],neuro_par.squeeze()[0:32])[0] for i in range(sub_pr.shape[0])]
-        sh_corr_sub.append(spatial_r)
-        spatial_r = [pearsonr(sub_pr[i,32:],neuro_par.squeeze()[32:])[0] for i in range(sub_pr.shape[0])]
-        sh_corr_cortical.append(spatial_r)
-
-    real_corr_cortical = []
-    real_corr_sub = []
-    for pr in original:
-        sub_pr = pr.cpu().numpy()
-        spatial_r = [pearsonr(sub_pr[i,:32],neuro_par.squeeze()[0:32])[0] for i in range(sub_pr.shape[0])]
-        real_corr_sub.append(spatial_r)
-        spatial_r = [pearsonr(sub_pr[i,32:],neuro_par.squeeze()[32:])[0] for i in range(sub_pr.shape[0])]
-        real_corr_cortical.append(spatial_r)
-    return pr_corr_cortical,real_corr_cortical,sh_corr_cortical,pr_corr_sub,real_corr_sub,sh_corr_sub
-'''
 
 def cal_spatial_neuromap(private,shared,original,neuro_par):
     pr_corr = []
