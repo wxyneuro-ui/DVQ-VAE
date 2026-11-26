@@ -311,8 +311,8 @@ def plot_glass_brain(atlas_path,stats_data,title,save_path,nii_path):
         plot_abs=False
     )
     # 修改 colorbar 刻度
-    ticks = np.arange(np.min(stats_data), np.max(stats_data),1.5)  # 每1为间隔
-    tick_labels = [f"{t:.2f}" for t in ticks]  # 保留两位小数
+    ticks = np.arange(np.min(stats_data), np.max(stats_data),1.5)  
+    tick_labels = [f"{t:.2f}" for t in ticks]  
     display._colorbar_ax.get_yaxis().set_ticks(ticks)
     display._colorbar_ax.get_yaxis().set_ticklabels([str(t) for t in tick_labels])
     plt.savefig(save_path,dpi = 300)
@@ -382,23 +382,20 @@ def plot_training_history(train_losses, val_losses,
                           train_recon_loss, val_recon_loss,
                           train_vq_loss, val_vq_loss,
                           train_c_s_loss, val_c_s_loss):
-    """绘制训练历史"""
+  
     xranges = np.arange(5,1006,200)
     sns.set_theme(style="white", palette="deep",font_scale=1.5,font="Arial")
     fig, axes = plt.subplots(1, 4, figsize=(20, 5))
     #plt.rcParams['font.family'] = 'serif'
     #plt.rcParams['font.serif'] = ['Arial']
     
-    # 总损失
     axes[0].plot(train_losses, label='train loss', color='blue')
     axes[0].plot(val_losses, label='valid loss', color='red')
     axes[0].set_title('Total loss')
     axes[0].set_xlabel('Epoch')
     axes[0].set_ylabel('Loss')
     axes[0].set_xticks(xranges)
-    
-
-    
+        
     axes[1].plot(train_recon_loss, label='train loss', color='blue')
     axes[1].plot(val_recon_loss, label='valid loss', color='red')
     axes[1].set_title('Recon loss')
@@ -406,16 +403,13 @@ def plot_training_history(train_losses, val_losses,
     axes[1].set_ylabel(None)
     axes[1].set_xticks(xranges)
  
-
-    axes[2].plot(train_vq_loss, label='train loss', color='blue')
     axes[2].plot(val_vq_loss, label='valid loss', color='red')
     axes[2].set_title('VQ loss')
     axes[2].set_xlabel('Epoch')
     axes[2].set_ylabel(None)
     axes[2].set_xticks(xranges)
   
-
-    
+  
     axes[3].plot(train_c_s_loss, label='train loss', color='blue')
     axes[3].plot(val_c_s_loss, label='valid loss', color='red')
     axes[3].set_title('C_S loss')
@@ -456,7 +450,7 @@ def plot_radors(arr1,arr2,arr3,labels,yticks,save_path=None):
     plt.rcParams["font.size"]=20
 
     #colors = ['#1f77b4','#FD5109']
-    colors = ['#C0D4F5','#F2CBB7','#EE8468'] #蓝色,红色
+    colors = ['#C0D4F5','#F2CBB7','#EE8468']
     fig,ax = plt.subplots(1,3, subplot_kw={'projection': 'polar'},figsize=(30, 8))
     ax[0].plot(angles, pcc_GM_rand, '-', linewidth=4,color = colors[1])
     #ax[0].fill(angles, pcc_GM_rand, alpha=0.5,color = colors[0])
@@ -532,14 +526,7 @@ def paired_t_scatter(x, y,
                      show_CI=True,
                      point_alpha=0.9,
                      save_path=None):
-    """
-    画配对样本散点图并做配对t检验。
-    x, y: 可迭代的配对数据（长度相同）
-    labels: x,y 两组的名称
-    palette: 两组的颜色 (color_x, color_y)
-    jitter: x 轴轻微抖动幅度，避免点重叠
-    show_CI: 是否显示均值和95% CI
-    """
+   
     x = np.asarray(x)
     y = np.asarray(y)
     if x.shape != y.shape:
@@ -547,10 +534,10 @@ def paired_t_scatter(x, y,
 
     n = len(x)
 
-    # 统计检验
+  
     tstat, pval = stats.wilcoxon(y, x)
 
-    # 星号表示显著性
+
     def p_to_stars(p):
         if p < 0.001: return '***'
         if p < 0.01:  return '**'
@@ -559,43 +546,36 @@ def paired_t_scatter(x, y,
 
     stars = p_to_stars(pval)
 
-    # 画图设置
+
     sns.set(style="whitegrid", font_scale=3)
     plt.rcParams["font.family"] = "Arial"
 
     fig, ax = plt.subplots(figsize=(6,6))
 
-    # x 位置 0 和 1
     x_pos = np.zeros(n)
     y_pos = np.ones(n)
 
-    # 加入微小抖动
     rng = np.random.default_rng(0)
     x_jitter = x_pos + rng.uniform(-jitter, jitter, size=n)
     y_jitter = y_pos + rng.uniform(-jitter, jitter, size=n)
 
-    # 先画连接线：按升降分色，线条细且半透明
     diffs = y - x
     up_mask = diffs >= 0
     down_mask = diffs < 0
 
-    # 下降的线（灰色偏淡）
     for i in np.where(down_mask)[0]:
         ax.plot([x_jitter[i], y_jitter[i]], [x[i], y[i]],
                 color='gray', linewidth=0.8, alpha=0.6, zorder=1)
 
-    # 上升的线（颜色更突出）
     for i in np.where(up_mask)[0]:
         ax.plot([x_jitter[i], y_jitter[i]], [x[i], y[i]],
                 color='black', linewidth=0.8, alpha=0.6, zorder=1)
 
-    # 画散点
     ax.scatter(x_jitter, x, s=70, marker='o',
                color=palette[0], edgecolor='k', linewidth=1, alpha=point_alpha, zorder=1, label=labels[0])
     ax.scatter(y_jitter, y, s=70, marker='o',
                color=palette[1], edgecolor='k', linewidth=1, alpha=point_alpha, zorder=1, label=labels[1])
 
-    # 绘制均值和95% CI（若要求）
     def mean_ci(arr):
         arr = np.asarray(arr)
         arr = arr[~np.isnan(arr)]
@@ -612,22 +592,17 @@ def paired_t_scatter(x, y,
         ax.errorbar(1.08, m2, yerr=[[m2-lo2],[hi2-m2]], fmt='s', color='k',
                     elinewidth=1.0, capsize=6, capthick=1.0, markerfacecolor=palette[1], markersize=8, zorder=4)
 
-        # 也可画横向粗线表示均值
         ax.hlines(m1, -0.2, 0.2, colors=palette[0], linewidth=2, alpha=0.9, zorder=3)
         ax.hlines(m2, 0.8, 1.2, colors=palette[1], linewidth=2, alpha=0.9, zorder=3)
 
-    # 美化坐标轴与刻度
     ax.set_xlim(-0.5, 1.5)
     ax.set_xticks([0,1])
     ax.set_xticklabels(labels, fontsize=14)
     ax.set_ylabel('PCC', fontsize=14)
     ax.tick_params(axis='both', which='major', labelsize=12)
 
-    # 去掉 legend 外框与标题（如果显示）
     ax.legend().remove()
     
-    # 注明 t-test 结果
-    # 把 p 值放在两组上方
     ymax = np.nanmax(np.concatenate([x,y]))
     ytext = ymax + 0.07*(np.nanmax(np.concatenate([x,y])) - np.nanmin(np.concatenate([x,y])))
     ax.text(0.5, ytext, f'Wilcoxon signed-rank test : w={tstat:.2f}, p={pval:.3f} ({stars})',
@@ -641,31 +616,26 @@ def plot_combined_heatmap(mat1,mat2,save_path):
     C = np.zeros_like(mat1)
     n = C.shape[0]
 
-    # 上三角来自 A
+
     C[np.triu_indices_from(C, k=1)] = mat1[np.triu_indices_from(mat1, k=1)]
 
-    # 下三角来自 B
+
     C[np.tril_indices_from(C, k=-1)] = mat2[np.tril_indices_from(mat2, k=-1)]
 
-    # 对角线设为 NaN（隐藏）
     np.fill_diagonal(C, np.nan)
 
-    # 绘制 heatmap
     sns.set_theme(style="white", palette="deep",font_scale=1.2,font="Arial")
 
-    # 掩码
-    mask_upper = np.tril(np.ones_like(C, dtype=bool), k=-1)  # 遮住下三角 → 显示上三角
-    mask_lower = np.triu(np.ones_like(C, dtype=bool), k=1)   # 遮住上三角 → 显示下三角
+    mask_upper = np.tril(np.ones_like(C, dtype=bool), k=-1) 
+    mask_lower = np.triu(np.ones_like(C, dtype=bool), k=1)   
 
-    # Colormaps
-    cmapA = matplotlib.colormaps.get_cmap("Oranges")     # 上三角使用红色
-    cmapB = matplotlib.colormaps.get_cmap("Blues")    # 下三角使用蓝色
 
-    # 绘制上三角（A）
+    cmapA = matplotlib.colormaps.get_cmap("Oranges")    
+    cmapB = matplotlib.colormaps.get_cmap("Blues")    
+
     ax=sns.heatmap(C, mask=mask_upper, cmap=cmapA, square=True,
                 cbar=True, vmin=0, vmax=np.nanmax(mat1))
 
-    # 绘制下三角（B）
     ax=sns.heatmap(C, mask=mask_lower, cmap=cmapB, square=True,
                 cbar=True, vmin=0, vmax=np.nanmax(mat2))
 
@@ -677,18 +647,16 @@ def plot_combined_heatmap(mat1,mat2,save_path):
         linewidth=1,
         alpha=1
     )
-    # --- 去除外周坐标轴刻度文字 ---
+   
     ax.set_xticklabels([])
     ax.set_yticklabels([])
 
-    # 可选：刻度线长度设为 0
     ax.tick_params(axis='both', which='both', length=0)
 
-    # 1. 给 heatmap 外周加粗边框
     for spine in ax.spines.values():
         spine.set_visible(True)
         spine.set_linewidth(1)
-        spine.set_color("black")  # 或其他颜色
+        spine.set_color("black")  
     plt.savefig(save_path, dpi=300)
 
 def plot_paired_expression(x1,y1,x2,y2,save_path):
@@ -799,25 +767,18 @@ def plot_r_diffs(r_diffs:list,savepath):
     "FDC": r_diffs[2]
 }
 
-# Nature 风格配色（低饱和，更科研）
     colors = {
-        "GMV": "#E69F00",   # 蓝
-        "ALFF": "#0072B2",   # 橙
-        "FDC": "#009E73"    # 绿
+        "GMV": "#E69F00",   # Blue
+        "ALFF": "#0072B2",   # Orange
+        "FDC": "#009E73"    # Green
     }
     
-    # -------------------------------------------------------------------
-    # 创建 figure，多个 ax 上下排列
-    # -------------------------------------------------------------------
     sns.set_theme('paper','whitegrid',font = 'Arial',font_scale=2.2)
     fig, axes = plt.subplots(len(groups), 1, figsize=(6, 4), sharex=True)
     
     if len(groups) == 1:
-        axes = [axes]  # 保证可迭代
+        axes = [axes]  
     
-    # -------------------------------------------------------------------
-    # 画 KDE + 均值短线
-    # -------------------------------------------------------------------
     for ax, (name, data) in zip(axes, groups.items()):
     
         # KDE
@@ -830,9 +791,8 @@ def plot_r_diffs(r_diffs:list,savepath):
             alpha=0.25
         )
     
-        # 均值
         mean_val = np.mean(data)
-        ax.axvline(mean_val, ymin=0, ymax=0.42,   # 短黑线
+        ax.axvline(mean_val, ymin=0, ymax=0.42,   
                    color="black", linewidth=2)
     
         ax.set_ylabel(name, rotation=0, labelpad=20, fontsize=12)
@@ -840,9 +800,6 @@ def plot_r_diffs(r_diffs:list,savepath):
         ax.set_xlabel(None)
         ax.spines["left"].set_visible(False)
     
-    # -------------------------------------------------------------------
-    # 样式
-    # -------------------------------------------------------------------
     axes[-1].set_xlabel("Value", fontsize=12)
     sns.despine(left=True)
     plt.savefig(savepath, dpi=300,bbox_inches='tight')
@@ -852,7 +809,6 @@ def plot_3D_bar(TPR,FPR,SR,save_path):
     y = np.array(FPR)
     z = np.array(SR)
 
-    # Nature / Science 风格配色（柔和但对比强）
     colors = [  
               "#5E3C99",  # deep purple-blue,w\o tuning
               "#1B9E77",  # teal green, fully fine tuning
@@ -876,22 +832,17 @@ def plot_3D_bar(TPR,FPR,SR,save_path):
             shade=True
         )
 
-    # 美化风格
     ax.set_xlabel(None)
     ax.set_ylabel(None)
     ax.set_zlabel(None)
 
-    # 去掉 3D 边框的视觉噪声（更接近 Nature）
-    # 网格淡化处理（更清爽）
 
     ax.xaxis.pane.set_edgecolor('w')
     ax.yaxis.pane.set_edgecolor('w')
     ax.zaxis.pane.set_edgecolor('w')
 
-    # 调整视角（更专业的 3D 展示）
-    # ---- 避免遮挡的关键技巧 ----
-    ax.view_init(elev=20, azim=-60)   # 选择不遮挡的角度
-    ax.dist = 0                      # 拉远视角减少遮挡
+    ax.view_init(elev=20, azim=-60)   
+    ax.dist = 0                     
     plt.savefig(save_path, dpi=300, bbox_inches = 'tight')
 
 '''
